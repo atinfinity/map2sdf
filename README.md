@@ -70,6 +70,22 @@ Via the launch file (uses ros_gz_sim):
 ros2 launch map2sdf map2sdf_demo.launch.py world:=/tmp/map_world/map_world.sdf
 ```
 
+### Generating from a live `/map` topic
+
+`map2sdf_node` subscribes to a `nav_msgs/OccupancyGrid` topic (latched,
+as published by `map_server` or a SLAM node) and writes the same output
+files, so a world can be generated directly from a running SLAM session:
+
+```bash
+ros2 run map2sdf map2sdf_node --ros-args -p out:=/tmp/map_world \
+  -p simplify:=0.05 -r map:=/your_map_topic
+```
+
+Parameters mirror the CLI options (`out`, `world_name`, `wall_height`,
+`simplify`, `ground`, `shadows`, `unknown_as`, `occupied_thresh`). With
+`one_shot` (default `true`) the node exits after the first conversion;
+set it to `false` to regenerate on every map update.
+
 ### Output files
 
 The output directory will contain `map_world.sdf` and `map_world_walls.stl`.

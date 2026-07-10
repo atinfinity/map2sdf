@@ -27,6 +27,7 @@ setup(
     entry_points={
         'console_scripts': [
             'map2sdf = map2sdf.cli:main',
+            'map2sdf_node = map2sdf.map_node:main',
         ],
     },
 )
