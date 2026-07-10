@@ -32,3 +32,15 @@ jobs:
           source /opt/ros/jazzy/setup.bash
           colcon test --packages-select map2sdf --event-handlers console_direct+
           colcon test-result --verbose
+
+      - name: E2E smoke test (generate world and validate SDF)
+        shell: bash
+        run: |
+          source install/setup.bash
+          ros2 run map2sdf map2sdf \
+            --map src/map2sdf/test/maps/sample.yaml -o /tmp/world
+          ros2 run map2sdf map2sdf \
+            --map src/map2sdf/test/maps/sample.yaml -o /tmp/world_simplified \
+            --simplify 0.1
+          gz sdf -k /tmp/world/map_world.sdf
+          gz sdf -k /tmp/world_simplified/map_world.sdf
