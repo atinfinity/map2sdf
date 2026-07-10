@@ -1,5 +1,7 @@
 # map2sdf
 
+[![CI](https://github.com/atinfinity/map2sdf/actions/workflows/ci.yml/badge.svg)](https://github.com/atinfinity/map2sdf/actions/workflows/ci.yml)
+
 A ROS 2 package that generates Gazebo (gz sim) SDF world files from
 ROS 2 occupancy grid maps in the nav2 `map_server` format (YAML + PGM/PNG).
 
