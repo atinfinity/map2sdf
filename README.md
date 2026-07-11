@@ -48,7 +48,8 @@ ros2 run map2sdf map2sdf --map <map.yaml> -o <output-dir> [options]
 | `--map` | (required) | path to the map YAML file |
 | `-o, --out` | `.` | output directory |
 | `--wall-height` | `2.0` | wall height in meters |
-| `--world-name` | `map_world` | SDF world name, also used as the output file stem |
+| `--world-name` | `map_world` | SDF world/model name, also used as the output file stem |
+| `--format {world,model}` | `world` | output a complete world, or a Gazebo model directory for `<include>` |
 | `--no-ground` | - | do not add a ground plane |
 | `--shadows` | - | enable shadows (disabled by default for lighter rendering) |
 | `--unknown-as {free,occupied}` | `free` | how to treat unknown cells |
@@ -85,6 +86,21 @@ Parameters mirror the CLI options (`out`, `world_name`, `wall_height`,
 `simplify`, `ground`, `shadows`, `unknown_as`, `occupied_thresh`). With
 `one_shot` (default `true`) the node exits after the first conversion;
 set it to `false` to regenerate on every map update.
+
+### Adding the walls to an existing world
+
+`--format model` writes a Gazebo model directory
+(`<out>/<name>/model.config`, `model.sdf`, and the STL) instead of a
+world, so the walls can be dropped into an existing world:
+
+```xml
+<include>
+  <uri>file:///path/to/out/map_walls</uri>
+</include>
+```
+
+The map origin pose is embedded in the model, so including it without a
+pose keeps the walls aligned to the original map frame.
 
 ### Output files
 

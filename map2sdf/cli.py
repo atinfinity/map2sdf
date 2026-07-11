@@ -7,7 +7,7 @@ import sys
 from map2sdf.contours import extract_regions
 from map2sdf.map_io import load_map
 from map2sdf.mesher import regions_to_triangles
-from map2sdf.sdf_builder import build_world
+from map2sdf.sdf_builder import build_model, build_model_config, build_world
 from map2sdf.stl_writer import write_binary_stl
 
 
@@ -24,7 +24,13 @@ def main(argv=None):
     parser.add_argument('--wall-height', type=float, default=2.0,
                         help='wall height in meters (default: 2.0)')
     parser.add_argument('--world-name', default='map_world',
-                        help='SDF world name, also used as the output file stem')
+                        help='SDF world/model name, also used as the output '
+                             'file stem')
+    parser.add_argument('--format', choices=('world', 'model'), default='world',
+                        dest='output_format',
+                        help='output a complete world (default) or a Gazebo '
+                             'model directory (model.config + model.sdf) that '
+                             'can be <include>d into existing worlds')
     parser.add_argument('--no-ground', action='store_true',
                         help='do not add a ground plane')
     parser.add_argument('--shadows', action='store_true',
@@ -56,8 +62,9 @@ def main(argv=None):
         print('warning: no occupied cells found in the map', file=sys.stderr)
 
     out_dir = Path(args.out)
+    if args.output_format == 'model':
+        out_dir = out_dir / args.world_name
     out_dir.mkdir(parents=True, exist_ok=True)
-    world_path = out_dir / f'{args.world_name}.sdf'
 
     mesh_name = f'{args.world_name}_walls.stl'
     triangles = regions_to_triangles(
@@ -65,16 +72,24 @@ def main(argv=None):
     write_binary_stl(out_dir / mesh_name, triangles)
     print(f'wrote {out_dir / mesh_name} ({len(triangles)} triangles)')
 
-    sdf_text = build_world(
-        map_data,
-        mesh_name,  # resolved relative to the world file
-        world_name=args.world_name,
-        ground=not args.no_ground,
-        shadows=args.shadows)
-    world_path.write_text(sdf_text)
+    # The mesh URI is resolved relative to the SDF file next to it.
+    if args.output_format == 'model':
+        sdf_path = out_dir / 'model.sdf'
+        sdf_path.write_text(build_model(
+            map_data, mesh_name, model_name=args.world_name))
+        (out_dir / 'model.config').write_text(
+            build_model_config(args.world_name))
+        print(f'wrote {out_dir / "model.config"}')
+    else:
+        sdf_path = out_dir / f'{args.world_name}.sdf'
+        sdf_path.write_text(build_world(
+            map_data, mesh_name,
+            world_name=args.world_name,
+            ground=not args.no_ground,
+            shadows=args.shadows))
 
     rows, cols = map_data.size_cells
-    print(f'wrote {world_path} ({rows}x{cols} cells -> {len(regions)} wall '
+    print(f'wrote {sdf_path} ({rows}x{cols} cells -> {len(regions)} wall '
           f'regions, {len(triangles)} triangles)')
     return 0
 

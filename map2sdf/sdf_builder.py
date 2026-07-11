@@ -37,15 +37,46 @@ def build_world(map_data, mesh_uri, world_name='map_world',
     if ground:
         _add_ground_plane(world, map_data)
 
-    model = ET.SubElement(world, 'model', name='map_walls')
+    _add_walls_model(world, map_data, mesh_uri, 'map_walls')
+    raw = ET.tostring(sdf, encoding='unicode')
+    return minidom.parseString(raw).toprettyxml(indent='  ')
+
+
+def build_model(map_data, mesh_uri, model_name='map_walls'):
+    """
+    Return a standalone SDF model document as an XML string.
+
+    The map origin pose is embedded in the model, so including it
+    without an explicit pose keeps the walls aligned to the map frame.
+    """
+    if not mesh_uri:
+        raise ValueError('mesh_uri is required')
+    sdf = ET.Element('sdf', version='1.9')
+    _add_walls_model(sdf, map_data, mesh_uri, model_name)
+    raw = ET.tostring(sdf, encoding='unicode')
+    return minidom.parseString(raw).toprettyxml(indent='  ')
+
+
+def build_model_config(model_name, sdf_filename='model.sdf'):
+    """Return the model.config XML string for a generated model."""
+    root = ET.Element('model')
+    ET.SubElement(root, 'name').text = model_name
+    ET.SubElement(root, 'version').text = '1.0'
+    ET.SubElement(root, 'sdf', version='1.9').text = sdf_filename
+    ET.SubElement(root, 'description').text = \
+        'Walls generated from an occupancy grid map by map2sdf.'
+    raw = ET.tostring(root, encoding='unicode')
+    return minidom.parseString(raw).toprettyxml(indent='  ')
+
+
+def _add_walls_model(parent, map_data, mesh_uri, name):
+    model = ET.SubElement(parent, 'model', name=name)
     ET.SubElement(model, 'static').text = 'true'
     ox, oy, yaw = map_data.origin
     ET.SubElement(model, 'pose').text = f'{ox:g} {oy:g} 0 0 0 {yaw:g}'
     link = ET.SubElement(model, 'link', name='walls')
     _add_mesh_walls(link, mesh_uri)
-
-    raw = ET.tostring(sdf, encoding='unicode')
-    return minidom.parseString(raw).toprettyxml(indent='  ')
+    return model
 
 
 def _add_mesh_walls(link, mesh_uri):

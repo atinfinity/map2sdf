@@ -7,7 +7,7 @@ from xml.etree import ElementTree as ET
 from map2sdf.contours import extract_regions
 from map2sdf.map_io import MapData
 from map2sdf.mesher import regions_to_triangles
-from map2sdf.sdf_builder import build_world
+from map2sdf.sdf_builder import build_model, build_model_config, build_world
 from map2sdf.stl_writer import write_binary_stl
 
 import numpy as np
@@ -79,6 +79,20 @@ def test_mesh_world_references_uri():
 def test_mesh_requires_uri():
     with pytest.raises(ValueError, match='mesh_uri'):
         build_world(single_cell_map(), '')
+
+
+def test_standalone_model():
+    sdf = ET.fromstring(build_model(single_cell_map(), 'walls.stl',
+                                    model_name='office'))
+    model = sdf.find("model[@name='office']")
+    assert sdf.find('world') is None
+    assert model.find('static').text == 'true'
+    assert model.find('pose').text.split() == ['1', '2', '0', '0', '0', '0.25']
+    assert model.find('link/collision/geometry/mesh/uri').text == 'walls.stl'
+
+    config = ET.fromstring(build_model_config('office'))
+    assert config.find('name').text == 'office'
+    assert config.find('sdf').text == 'model.sdf'
 
 
 def test_single_cell_mesh_bounds():
